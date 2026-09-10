@@ -10,6 +10,7 @@ public class UnidadeFranqueada
     public string Estado { get; set; } = string.Empty;
     public string? Telefone { get; set; }
     public DateTime? DataInauguracao { get; set; }
+    public bool Ativo { get; set; } = true;
 
     public int FranqueadoraId { get; set; }
     public Franqueadora Franqueadora { get; set; } = null!;

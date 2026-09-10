@@ -47,7 +47,12 @@ public class UsuarioService : IUsuarioService
 
     public async Task<UsuarioResponseDto> ObterPorIdAsync(int id)
     {
-        var usuario = await _usuarioRepository.ObterPorIdAsync(id)
+        // Usamos Consultar() + Include em vez do ObterPorIdAsync genérico do
+        // repositório, porque esse último não traz o Perfil junto - e o
+        // MapearParaDto precisa do nome do perfil pra montar a resposta.
+        var usuario = await _usuarioRepository.Consultar()
+            .Include(u => u.Perfil)
+            .FirstOrDefaultAsync(u => u.Id == id)
             ?? throw new KeyNotFoundException($"Usuário {id} não encontrado.");
         return MapearParaDto(usuario);
     }
@@ -94,11 +99,28 @@ public class UsuarioService : IUsuarioService
         return await RegistrarAsync(dtoComPerfilFixo);
     }
 
+    public async Task<UsuarioResponseDto> AtualizarStatusAsync(int id, bool ativo)
+    {
+        var usuario = await _usuarioRepository.ObterPorIdAsync(id)
+            ?? throw new KeyNotFoundException($"Usuário {id} não encontrado.");
+
+        // So mudamos o campo Ativo aqui - o AuthService ja bloqueia o login
+        // de quem estiver inativo, entao inativar um usuario "tranca a porta"
+        // dele sem precisar apagar o cadastro (historico de vendas, chamados
+        // etc. continua existindo).
+        usuario.Ativo = ativo;
+        _usuarioRepository.Atualizar(usuario);
+        await _usuarioRepository.SalvarAsync();
+
+        return await ObterPorIdAsync(id);
+    }
+
     private static UsuarioResponseDto MapearParaDto(Usuario usuario) => new()
     {
         Id = usuario.Id,
         Nome = usuario.Nome,
         Email = usuario.Email,
-        Perfil = usuario.Perfil.Nome
+        Perfil = usuario.Perfil.Nome,
+        Ativo = usuario.Ativo
     };
 }

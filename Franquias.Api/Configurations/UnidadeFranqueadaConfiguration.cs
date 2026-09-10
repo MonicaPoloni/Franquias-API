@@ -16,6 +16,9 @@ public class UnidadeFranqueadaConfiguration : IEntityTypeConfiguration<UnidadeFr
         builder.Property(u => u.Cidade).IsRequired().HasMaxLength(100);
         builder.Property(u => u.Estado).IsRequired().HasMaxLength(2);
         builder.Property(u => u.Telefone).HasMaxLength(20);
+        // HasDefaultValue garante que, no banco, toda unidade criada sem informar
+        // Ativo nasce como "true" - inclusive as que já existiam antes dessa migration.
+        builder.Property(u => u.Ativo).HasDefaultValue(true);
         builder.HasIndex(u => u.Cnpj).IsUnique();
 
         builder.HasOne(u => u.Franqueadora)

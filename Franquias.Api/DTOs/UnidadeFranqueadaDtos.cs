@@ -39,6 +39,9 @@ public class UnidadeFranqueadaFiltroDto : ParametrosPaginacao
     public string? Cidade { get; set; }
     public string? Cnpj { get; set; }
 
+    // Se não vier nada, a listagem mostra ativas E inativas juntas.
+    public bool? Ativo { get; set; }
+
     // Aceita "nome", "cidade" ou "cnpj". Qualquer outro valor (ou vazio) usa "nome".
     public string? OrdenarPor { get; set; }
 }
@@ -53,8 +56,15 @@ public class UnidadeFranqueadaResponseDto
     public string Estado { get; set; } = string.Empty;
     public string? Telefone { get; set; }
     public DateTime? DataInauguracao { get; set; }
+    public bool Ativo { get; set; }
     public int FranqueadoraId { get; set; }
     public string FranqueadoraNome { get; set; } = string.Empty;
     public int FranqueadoId { get; set; }
     public string FranqueadoNome { get; set; } = string.Empty;
+}
+
+/// <summary>Corpo usado para ativar ou inativar uma unidade (PUT /api/unidadesfranqueadas/{id}/status).</summary>
+public class UnidadeFranqueadaAtualizarStatusDto
+{
+    public bool Ativo { get; set; }
 }

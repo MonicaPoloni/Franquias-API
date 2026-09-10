@@ -9,4 +9,5 @@ public interface IUnidadeFranqueadaService
     Task<UnidadeFranqueadaResponseDto> CriarAsync(UnidadeFranqueadaCreateDto dto);
     Task<UnidadeFranqueadaResponseDto> AtualizarAsync(int id, UnidadeFranqueadaCreateDto dto);
     Task RemoverAsync(int id);
+    Task<UnidadeFranqueadaResponseDto> AtualizarStatusAsync(int id, bool ativo);
 }

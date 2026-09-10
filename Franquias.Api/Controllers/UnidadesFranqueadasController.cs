@@ -51,4 +51,12 @@ public class UnidadesFranqueadasController : ControllerBase
         await _service.RemoverAsync(id);
         return NoContent();
     }
+
+    // Inativar uma unidade é o jeito "seguro" de tirá-la de operação sem apagar
+    // o histórico dela (vendas, estoque, cobranças, chamados continuam existindo).
+    // Uma unidade inativa fica bloqueada pra novas vendas (ver VendaService).
+    [Authorize(Roles = PerfilNomes.Administrador)]
+    [HttpPut("{id:int}/status")]
+    public async Task<ActionResult<UnidadeFranqueadaResponseDto>> AtualizarStatus(int id, UnidadeFranqueadaAtualizarStatusDto dto) =>
+        Ok(await _service.AtualizarStatusAsync(id, dto.Ativo));
 }

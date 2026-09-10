@@ -44,6 +44,8 @@ public class UnidadeFranqueadaService : IUnidadeFranqueadaService
             consulta = consulta.Where(u => u.Cidade.Contains(filtro.Cidade));
         if (!string.IsNullOrWhiteSpace(filtro.Cnpj))
             consulta = consulta.Where(u => u.Cnpj.Contains(filtro.Cnpj));
+        if (filtro.Ativo.HasValue)
+            consulta = consulta.Where(u => u.Ativo == filtro.Ativo.Value);
 
         consulta = filtro.OrdenarPor?.ToLower() switch
         {
@@ -80,6 +82,12 @@ public class UnidadeFranqueadaService : IUnidadeFranqueadaService
 
     public async Task<UnidadeFranqueadaResponseDto> CriarAsync(UnidadeFranqueadaCreateDto dto)
     {
+        // O banco já tem um índice único de CNPJ (então uma segunda unidade com
+        // o mesmo CNPJ nunca seria salva), mas sem essa checagem aqui na frente
+        // o erro que voltaria pro cliente seria um 500 genérico do banco, em vez
+        // de um 400 com mensagem clara - por isso validamos antes de tentar salvar.
+        await GarantirCnpjDisponivelAsync(dto.Cnpj);
+
         var franqueadora = await ObterFranqueadoraOuFalharAsync(dto.FranqueadoraId);
         var franqueado = await ObterFranqueadoOuFalharAsync(dto.FranqueadoId);
 
@@ -107,6 +115,11 @@ public class UnidadeFranqueadaService : IUnidadeFranqueadaService
     {
         var unidade = await _repository.ObterPorIdAsync(id)
             ?? throw new KeyNotFoundException($"Unidade franqueada {id} não encontrada.");
+
+        // Só precisa checar o CNPJ de novo se ele realmente mudou - senão a
+        // unidade ia "colidir com ela mesma" e nunca conseguiria ser editada.
+        if (!string.Equals(unidade.Cnpj, dto.Cnpj, StringComparison.OrdinalIgnoreCase))
+            await GarantirCnpjDisponivelAsync(dto.Cnpj);
 
         var franqueadora = await ObterFranqueadoraOuFalharAsync(dto.FranqueadoraId);
         var franqueado = await ObterFranqueadoOuFalharAsync(dto.FranqueadoId);
@@ -137,6 +150,25 @@ public class UnidadeFranqueadaService : IUnidadeFranqueadaService
         await _repository.SalvarAsync();
     }
 
+    public async Task<UnidadeFranqueadaResponseDto> AtualizarStatusAsync(int id, bool ativo)
+    {
+        var unidade = await _repository.ObterPorIdAsync(id)
+            ?? throw new KeyNotFoundException($"Unidade franqueada {id} não encontrada.");
+
+        unidade.Ativo = ativo;
+        _repository.Atualizar(unidade);
+        await _repository.SalvarAsync();
+
+        return await ObterPorIdAsync(id);
+    }
+
+    private async Task GarantirCnpjDisponivelAsync(string cnpj)
+    {
+        var existentes = await _repository.ObterTodosAsync();
+        if (existentes.Any(u => u.Cnpj == cnpj))
+            throw new ArgumentException($"Já existe uma unidade franqueada cadastrada com o CNPJ {cnpj}.");
+    }
+
     private async Task<Franqueadora> ObterFranqueadoraOuFalharAsync(int id) =>
         await _franqueadoraRepository.ObterPorIdAsync(id)
             ?? throw new ArgumentException($"Franqueadora {id} não existe.");
@@ -155,6 +187,7 @@ public class UnidadeFranqueadaService : IUnidadeFranqueadaService
         Estado = unidade.Estado,
         Telefone = unidade.Telefone,
         DataInauguracao = unidade.DataInauguracao,
+        Ativo = unidade.Ativo,
         FranqueadoraId = unidade.FranqueadoraId,
         FranqueadoraNome = unidade.Franqueadora.NomeFantasia,
         FranqueadoId = unidade.FranqueadoId,

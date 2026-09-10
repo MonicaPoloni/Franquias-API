@@ -35,4 +35,11 @@ public class UsuariosController : ControllerBase
         var usuario = await _service.RegistrarAsync(dto);
         return CreatedAtAction(nameof(ObterPorId), new { id = usuario.Id }, usuario);
     }
+
+    // Ativa ou inativa um usuário. Inativar não apaga o cadastro - só bloqueia
+    // o login dele (isso já é checado no AuthService). É assim que evitamos
+    // perder o histórico de vendas/chamados que esse usuário criou.
+    [HttpPut("{id:int}/status")]
+    public async Task<ActionResult<UsuarioResponseDto>> AtualizarStatus(int id, UsuarioAtualizarStatusDto dto) =>
+        Ok(await _service.AtualizarStatusAsync(id, dto.Ativo));
 }

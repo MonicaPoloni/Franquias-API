@@ -63,6 +63,14 @@ public class VendaService : IVendaService
     {
         var unidade = await _contexto.UnidadesFranqueadas.FindAsync(dto.UnidadeFranqueadaId)
             ?? throw new ArgumentException($"Unidade franqueada {dto.UnidadeFranqueadaId} não existe.");
+
+        // Regra de negócio: uma unidade inativa (fechada/suspensa) não pode
+        // gerar vendas novas. InvalidOperationException vira 400 no middleware
+        // global, com uma mensagem que explica exatamente o motivo do bloqueio.
+        if (!unidade.Ativo)
+            throw new InvalidOperationException(
+                $"A unidade '{unidade.Nome}' está inativa e não pode registrar novas vendas.");
+
         var usuario = await _contexto.Usuarios.FindAsync(dto.UsuarioId)
             ?? throw new ArgumentException($"Usuário {dto.UsuarioId} não existe.");
 

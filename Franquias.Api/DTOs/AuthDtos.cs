@@ -56,6 +56,13 @@ public class UsuarioResponseDto
     public string Nome { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Perfil { get; set; } = string.Empty;
+    public bool Ativo { get; set; }
+}
+
+/// <summary>Corpo usado para ativar ou inativar um usuário (PUT /api/usuarios/{id}/status).</summary>
+public class UsuarioAtualizarStatusDto
+{
+    public bool Ativo { get; set; }
 }
 
 /// <summary>Resposta do login: o token JWT e quando ele expira.</summary>
