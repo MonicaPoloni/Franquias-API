@@ -22,25 +22,43 @@ public class RelatorioService : IRelatorioService
         // Começamos pela lista de Unidades (não pelas Vendas) de propósito:
         // assim uma unidade que não vendeu nada no período aparece com total
         // zero, em vez de simplesmente sumir do relatório.
-        var resultado = await _contexto.UnidadesFranqueadas
+        var unidades = await _contexto.UnidadesFranqueadas
             .AsNoTracking()
-            .Select(u => new FaturamentoPorUnidadeDto
-            {
-                UnidadeFranqueadaId = u.Id,
-                UnidadeFranqueadaNome = u.Nome,
-                TotalFaturado = _contexto.Vendas
-                    .Where(v => v.UnidadeFranqueadaId == u.Id
-                        && (!dataInicio.HasValue || v.DataVenda >= dataInicio.Value)
-                        && (!dataFim.HasValue || v.DataVenda <= dataFim.Value))
-                    .Sum(v => (decimal?)v.ValorTotal) ?? 0,
-                QuantidadeVendas = _contexto.Vendas.Count(v => v.UnidadeFranqueadaId == u.Id
-                    && (!dataInicio.HasValue || v.DataVenda >= dataInicio.Value)
-                    && (!dataFim.HasValue || v.DataVenda <= dataFim.Value))
-            })
-            .OrderByDescending(f => f.TotalFaturado)
+            .Select(u => new { u.Id, u.Nome })
             .ToListAsync();
 
-        return resultado;
+        var consultaVendas = _contexto.Vendas.AsNoTracking().AsQueryable();
+        if (dataInicio.HasValue)
+            consultaVendas = consultaVendas.Where(v => v.DataVenda >= dataInicio.Value);
+        if (dataFim.HasValue)
+            consultaVendas = consultaVendas.Where(v => v.DataVenda <= dataFim.Value);
+
+        // O SQLite não sabe somar "decimal" direto no SQL (é uma limitação do
+        // provider - ver o erro "cannot apply aggregate operator Sum on
+        // expressions of type decimal"). Por isso trazemos só o Id da unidade
+        // e o valor de cada venda pra memória, e somamos aqui em C#.
+        var vendas = await consultaVendas
+            .Select(v => new { v.UnidadeFranqueadaId, v.ValorTotal })
+            .ToListAsync();
+
+        var vendasPorUnidade = vendas
+            .GroupBy(v => v.UnidadeFranqueadaId)
+            .ToDictionary(g => g.Key, g => (Total: g.Sum(v => v.ValorTotal), Quantidade: g.Count()));
+
+        return unidades
+            .Select(u =>
+            {
+                vendasPorUnidade.TryGetValue(u.Id, out var dados);
+                return new FaturamentoPorUnidadeDto
+                {
+                    UnidadeFranqueadaId = u.Id,
+                    UnidadeFranqueadaNome = u.Nome,
+                    TotalFaturado = dados.Total,
+                    QuantidadeVendas = dados.Quantidade
+                };
+            })
+            .OrderByDescending(f => f.TotalFaturado)
+            .ToList();
     }
 
     public async Task<List<RankingUnidadeDto>> RankingUnidadesAsync(DateTime? dataInicio, DateTime? dataFim)
@@ -69,31 +87,40 @@ public class RelatorioService : IRelatorioService
         if (dataFim.HasValue)
             consulta = consulta.Where(c => c.DataVencimento <= dataFim.Value);
 
-        var totalCobrado = await consulta.SumAsync(c => c.ValorCobranca);
-        var totalPago = await consulta
-            .Where(c => c.Status == StatusCobranca.Paga)
-            .SumAsync(c => c.ValorCobranca);
-        var quantidade = await consulta.CountAsync();
+        // Mesmo motivo do relatório de faturamento: SQLite não soma "decimal"
+        // no SQL, então trazemos os valores pra memória e somamos em C#.
+        var cobrancas = await consulta
+            .Select(c => new { c.ValorCobranca, c.Status })
+            .ToListAsync();
+
+        var totalCobrado = cobrancas.Sum(c => c.ValorCobranca);
+        var totalPago = cobrancas.Where(c => c.Status == StatusCobranca.Paga).Sum(c => c.ValorCobranca);
 
         return new TotalRoyaltiesDto
         {
             TotalCobrado = totalCobrado,
             TotalPago = totalPago,
             TotalPendente = totalCobrado - totalPago,
-            QuantidadeCobrancas = quantidade
+            QuantidadeCobrancas = cobrancas.Count
         };
     }
 
     public async Task<List<ProdutoMaisVendidoDto>> ProdutosMaisVendidosAsync(DateTime? dataInicio, DateTime? dataFim, int top)
     {
-        var itens = _contexto.ItensVenda.AsNoTracking().AsQueryable();
+        var consultaItens = _contexto.ItensVenda.AsNoTracking().AsQueryable();
         if (dataInicio.HasValue)
-            itens = itens.Where(i => i.Venda.DataVenda >= dataInicio.Value);
+            consultaItens = consultaItens.Where(i => i.Venda.DataVenda >= dataInicio.Value);
         if (dataFim.HasValue)
-            itens = itens.Where(i => i.Venda.DataVenda <= dataFim.Value);
+            consultaItens = consultaItens.Where(i => i.Venda.DataVenda <= dataFim.Value);
 
-        return await itens
-            .GroupBy(i => new { i.ProdutoServicoId, i.ProdutoServico.Nome })
+        // De novo, trazemos os itens pra memória antes de agrupar/somar,
+        // porque o TotalFaturado é "decimal" e o SQLite não soma esse tipo no SQL.
+        var itens = await consultaItens
+            .Select(i => new { i.ProdutoServicoId, i.ProdutoServico.Nome, i.Quantidade, i.PrecoUnitario })
+            .ToListAsync();
+
+        return itens
+            .GroupBy(i => new { i.ProdutoServicoId, i.Nome })
             .Select(g => new ProdutoMaisVendidoDto
             {
                 ProdutoServicoId = g.Key.ProdutoServicoId,
@@ -103,7 +130,7 @@ public class RelatorioService : IRelatorioService
             })
             .OrderByDescending(p => p.QuantidadeVendida)
             .Take(top)
-            .ToListAsync();
+            .ToList();
     }
 
     public async Task<List<EstoqueCriticoDto>> EstoqueCriticoAsync()
