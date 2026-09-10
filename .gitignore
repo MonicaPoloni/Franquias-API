@@ -1,0 +1,29 @@
+# Build (gerado automaticamente pelo dotnet build/run - nao precisa versionar)
+bin/
+obj/
+**/bin/
+**/obj/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+*.user
+*.suo
+
+# Banco de dados local (SQLite) - e gerado pelas Migrations, contem dados de teste locais
+Franquias.Api/*.db
+Franquias.Api/*.db-shm
+Franquias.Api/*.db-wal
+
+# Configuracao com segredos - cada ambiente/pessoa usa a sua propria, nao comitamos
+# (appsettings.json base fica versionado com valores de exemplo/desenvolvimento)
+appsettings.Development.json
+appsettings.*.local.json
+appsettings.Production.json
+**/secrets.json
+
+# Resultado de testes automatizados
+TestResults/
+
+# Logs e arquivos temporarios usados durante testes manuais
+*.log
