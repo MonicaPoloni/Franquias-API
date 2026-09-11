@@ -52,4 +52,26 @@ public class FornecedorServiceTests
             Cnpj = "11222333000144"
         }));
     }
+
+    [Fact]
+    public async Task AtualizarStatusAsync_DeveInativarEDepoisReativarOFornecedor()
+    {
+        // Arrange: fornecedor nasce ativo por padrão
+        var contexto = ContextoDeTeste.Criar();
+        var servico = CriarServico(contexto);
+        var fornecedor = await servico.CriarAsync(new FornecedorCreateDto
+        {
+            RazaoSocial = "Distribuidora ABC",
+            Cnpj = "11222333000144"
+        });
+        Assert.True(fornecedor.Ativo);
+
+        // Act: inativa
+        var inativado = await servico.AtualizarStatusAsync(fornecedor.Id, false);
+        Assert.False(inativado.Ativo);
+
+        // Act: reativa
+        var reativado = await servico.AtualizarStatusAsync(fornecedor.Id, true);
+        Assert.True(reativado.Ativo);
+    }
 }

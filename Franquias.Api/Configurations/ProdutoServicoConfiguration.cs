@@ -14,6 +14,7 @@ public class ProdutoServicoConfiguration : IEntityTypeConfiguration<ProdutoServi
         builder.Property(p => p.Descricao).HasMaxLength(250);
         builder.Property(p => p.Preco).HasColumnType("decimal(18,2)");
         builder.Property(p => p.Tipo).HasConversion<string>().HasMaxLength(20);
+        builder.Property(p => p.Ativo).HasDefaultValue(true);
 
         builder.HasOne(p => p.Categoria)
             .WithMany(c => c.Produtos)

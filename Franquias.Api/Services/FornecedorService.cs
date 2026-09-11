@@ -14,22 +14,30 @@ public class FornecedorService : IFornecedorService
         _repository = repository;
     }
 
-    public async Task<ResultadoPaginado<FornecedorResponseDto>> ListarAsync(ParametrosPaginacao? paginacao)
+    public async Task<ResultadoPaginado<FornecedorResponseDto>> ListarAsync(FornecedorFiltroDto? filtro)
     {
-        paginacao ??= new ParametrosPaginacao();
+        filtro ??= new FornecedorFiltroDto();
 
-        var consulta = _repository.Consultar().OrderBy(f => f.RazaoSocial);
+        var consulta = _repository.Consultar();
+        if (!string.IsNullOrWhiteSpace(filtro.Nome))
+            consulta = consulta.Where(f => f.RazaoSocial.Contains(filtro.Nome));
+        if (!string.IsNullOrWhiteSpace(filtro.Cnpj))
+            consulta = consulta.Where(f => f.Cnpj.Contains(filtro.Cnpj));
+        if (filtro.Ativo.HasValue)
+            consulta = consulta.Where(f => f.Ativo == filtro.Ativo.Value);
+
+        consulta = consulta.OrderBy(f => f.RazaoSocial);
         var totalRegistros = await consulta.CountAsync();
         var fornecedores = await consulta
-            .Skip((paginacao.Pagina - 1) * paginacao.TamanhoPagina)
-            .Take(paginacao.TamanhoPagina)
+            .Skip((filtro.Pagina - 1) * filtro.TamanhoPagina)
+            .Take(filtro.TamanhoPagina)
             .ToListAsync();
 
         return new ResultadoPaginado<FornecedorResponseDto>
         {
             Itens = fornecedores.Select(MapearParaDto).ToList(),
-            PaginaAtual = paginacao.Pagina,
-            TamanhoPagina = paginacao.TamanhoPagina,
+            PaginaAtual = filtro.Pagina,
+            TamanhoPagina = filtro.TamanhoPagina,
             TotalRegistros = totalRegistros
         };
     }
@@ -83,6 +91,18 @@ public class FornecedorService : IFornecedorService
         await _repository.SalvarAsync();
     }
 
+    public async Task<FornecedorResponseDto> AtualizarStatusAsync(int id, bool ativo)
+    {
+        var fornecedor = await _repository.ObterPorIdAsync(id)
+            ?? throw new KeyNotFoundException($"Fornecedor {id} não encontrado.");
+
+        fornecedor.Ativo = ativo;
+        _repository.Atualizar(fornecedor);
+        await _repository.SalvarAsync();
+
+        return MapearParaDto(fornecedor);
+    }
+
     private async Task GarantirCnpjDisponivelAsync(string cnpj)
     {
         var existentes = await _repository.ObterTodosAsync();
@@ -96,6 +116,7 @@ public class FornecedorService : IFornecedorService
         RazaoSocial = fornecedor.RazaoSocial,
         Cnpj = fornecedor.Cnpj,
         Telefone = fornecedor.Telefone,
-        Email = fornecedor.Email
+        Email = fornecedor.Email,
+        Ativo = fornecedor.Ativo
     };
 }

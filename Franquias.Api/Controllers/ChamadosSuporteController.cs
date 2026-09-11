@@ -18,9 +18,10 @@ public class ChamadosSuporteController : ControllerBase
         _service = service;
     }
 
+    // Ex: /api/chamadossuporte?status=Aberto&prioridade=Alta&unidadeFranqueadaId=1
     [HttpGet]
-    public async Task<ActionResult<ResultadoPaginado<ChamadoSuporteResponseDto>>> ObterTodos([FromQuery] ParametrosPaginacao paginacao) =>
-        Ok(await _service.ListarAsync(paginacao));
+    public async Task<ActionResult<ResultadoPaginado<ChamadoSuporteResponseDto>>> ObterTodos([FromQuery] ChamadoSuporteFiltroDto filtro) =>
+        Ok(await _service.ListarAsync(filtro));
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ChamadoSuporteResponseDto>> ObterPorId(int id) =>

@@ -4,9 +4,10 @@ namespace Franquias.Api.Services;
 
 public interface IFornecedorService
 {
-    Task<ResultadoPaginado<FornecedorResponseDto>> ListarAsync(ParametrosPaginacao? paginacao);
+    Task<ResultadoPaginado<FornecedorResponseDto>> ListarAsync(FornecedorFiltroDto? filtro);
     Task<FornecedorResponseDto> ObterPorIdAsync(int id);
     Task<FornecedorResponseDto> CriarAsync(FornecedorCreateDto dto);
     Task<FornecedorResponseDto> AtualizarAsync(int id, FornecedorCreateDto dto);
     Task RemoverAsync(int id);
+    Task<FornecedorResponseDto> AtualizarStatusAsync(int id, bool ativo);
 }

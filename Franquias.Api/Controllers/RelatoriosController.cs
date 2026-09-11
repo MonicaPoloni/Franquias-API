@@ -31,6 +31,10 @@ public class RelatoriosController : ControllerBase
     public async Task<ActionResult<List<RankingUnidadeDto>>> RankingUnidades([FromQuery] FiltroPeriodoDto filtro) =>
         Ok(await _service.RankingUnidadesAsync(filtro.DataInicio, filtro.DataFim));
 
+    [HttpGet("royalties-por-unidade")]
+    public async Task<ActionResult<List<RoyaltiesPorUnidadeDto>>> RoyaltiesPorUnidade([FromQuery] FiltroPeriodoDto filtro) =>
+        Ok(await _service.RoyaltiesPorUnidadeAsync(filtro.DataInicio, filtro.DataFim));
+
     [HttpGet("royalties-totais")]
     public async Task<ActionResult<TotalRoyaltiesDto>> RoyaltiesTotais([FromQuery] FiltroPeriodoDto filtro) =>
         Ok(await _service.TotalRoyaltiesAsync(filtro.DataInicio, filtro.DataFim));

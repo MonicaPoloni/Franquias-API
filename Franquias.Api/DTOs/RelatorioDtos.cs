@@ -33,6 +33,16 @@ public class TotalRoyaltiesDto
     public int QuantidadeCobrancas { get; set; }
 }
 
+public class RoyaltiesPorUnidadeDto
+{
+    public int UnidadeFranqueadaId { get; set; }
+    public string UnidadeFranqueadaNome { get; set; } = string.Empty;
+    public decimal TotalCobrado { get; set; }
+    public decimal TotalPago { get; set; }
+    public decimal TotalPendente { get; set; }
+    public int QuantidadeCobrancas { get; set; }
+}
+
 public class ProdutoMaisVendidoDto
 {
     public int ProdutoServicoId { get; set; }

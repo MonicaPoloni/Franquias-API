@@ -25,22 +25,30 @@ public class ChamadoSuporteService : IChamadoSuporteService
         _contexto = contexto;
     }
 
-    public async Task<ResultadoPaginado<ChamadoSuporteResponseDto>> ListarAsync(ParametrosPaginacao? paginacao)
+    public async Task<ResultadoPaginado<ChamadoSuporteResponseDto>> ListarAsync(ChamadoSuporteFiltroDto? filtro)
     {
-        paginacao ??= new ParametrosPaginacao();
+        filtro ??= new ChamadoSuporteFiltroDto();
 
-        var consulta = ConsultaComIncludes().OrderByDescending(c => c.DataAbertura);
+        var consulta = ConsultaComIncludes();
+        if (filtro.Status.HasValue)
+            consulta = consulta.Where(c => c.Status == filtro.Status.Value);
+        if (filtro.Prioridade.HasValue)
+            consulta = consulta.Where(c => c.Prioridade == filtro.Prioridade.Value);
+        if (filtro.UnidadeFranqueadaId.HasValue)
+            consulta = consulta.Where(c => c.UnidadeFranqueadaId == filtro.UnidadeFranqueadaId.Value);
+
+        consulta = consulta.OrderByDescending(c => c.DataAbertura);
         var totalRegistros = await consulta.CountAsync();
         var chamados = await consulta
-            .Skip((paginacao.Pagina - 1) * paginacao.TamanhoPagina)
-            .Take(paginacao.TamanhoPagina)
+            .Skip((filtro.Pagina - 1) * filtro.TamanhoPagina)
+            .Take(filtro.TamanhoPagina)
             .ToListAsync();
 
         return new ResultadoPaginado<ChamadoSuporteResponseDto>
         {
             Itens = chamados.Select(MapearParaDto).ToList(),
-            PaginaAtual = paginacao.Pagina,
-            TamanhoPagina = paginacao.TamanhoPagina,
+            PaginaAtual = filtro.Pagina,
+            TamanhoPagina = filtro.TamanhoPagina,
             TotalRegistros = totalRegistros
         };
     }
@@ -66,6 +74,7 @@ public class ChamadoSuporteService : IChamadoSuporteService
             Titulo = dto.Titulo,
             Descricao = dto.Descricao,
             Prioridade = dto.Prioridade,
+            Categoria = dto.Categoria,
             Status = StatusChamadoSuporte.Aberto,
             DataAbertura = DateTime.UtcNow
         };
@@ -116,6 +125,7 @@ public class ChamadoSuporteService : IChamadoSuporteService
         UsuarioAberturaNome = chamado.UsuarioAbertura.Nome,
         Titulo = chamado.Titulo,
         Descricao = chamado.Descricao,
+        Categoria = chamado.Categoria,
         Status = chamado.Status,
         Prioridade = chamado.Prioridade,
         DataAbertura = chamado.DataAbertura,

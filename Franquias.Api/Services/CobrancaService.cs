@@ -60,13 +60,15 @@ public class CobrancaService : ICobrancaService
         if (existentes.Any(c => c.UnidadeFranqueadaId == dto.UnidadeFranqueadaId && c.Competencia == dto.Competencia))
             throw new ArgumentException("Já existe uma cobrança para essa unidade nessa competência.");
 
+        var faturamentoBase = await CalcularFaturamentoDoPeriodoAsync(dto.UnidadeFranqueadaId, dto.Competencia);
+
         var cobranca = new Cobranca
         {
             UnidadeFranqueadaId = dto.UnidadeFranqueadaId,
             Competencia = dto.Competencia,
-            FaturamentoBase = dto.FaturamentoBase,
+            FaturamentoBase = faturamentoBase,
             PercentualRoyalty = dto.PercentualRoyalty,
-            ValorCobranca = CalcularValorCobranca(dto.FaturamentoBase, dto.PercentualRoyalty),
+            ValorCobranca = CalcularValorCobranca(faturamentoBase, dto.PercentualRoyalty),
             DataVencimento = dto.DataVencimento,
             Status = StatusCobranca.Pendente
         };
@@ -85,14 +87,42 @@ public class CobrancaService : ICobrancaService
         if (cobranca.Status == StatusCobranca.Paga)
             throw new InvalidOperationException("Não é possível editar uma cobrança que já foi paga.");
 
-        cobranca.FaturamentoBase = dto.FaturamentoBase;
+        // Recalcula o faturamento de novo (pode ser que a unidade ou a
+        // competência tenham mudado, ou que novas vendas tenham entrado
+        // desde a criação da cobrança).
+        var faturamentoBase = await CalcularFaturamentoDoPeriodoAsync(dto.UnidadeFranqueadaId, dto.Competencia);
+
+        cobranca.UnidadeFranqueadaId = dto.UnidadeFranqueadaId;
+        cobranca.Competencia = dto.Competencia;
+        cobranca.FaturamentoBase = faturamentoBase;
         cobranca.PercentualRoyalty = dto.PercentualRoyalty;
-        cobranca.ValorCobranca = CalcularValorCobranca(dto.FaturamentoBase, dto.PercentualRoyalty);
+        cobranca.ValorCobranca = CalcularValorCobranca(faturamentoBase, dto.PercentualRoyalty);
         cobranca.DataVencimento = dto.DataVencimento;
         _repository.Atualizar(cobranca);
         await _repository.SalvarAsync();
 
         return await ObterPorIdAsync(id);
+    }
+
+    // O faturamento não é digitado por ninguém: somamos aqui o valor de todas
+    // as vendas daquela unidade dentro do mês da competência informada. Assim
+    // o royalty sempre reflete o que realmente foi vendido.
+    private async Task<decimal> CalcularFaturamentoDoPeriodoAsync(int unidadeFranqueadaId, DateOnly competencia)
+    {
+        var inicioDoMes = new DateTime(competencia.Year, competencia.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var inicioDoMesSeguinte = inicioDoMes.AddMonths(1);
+
+        // Trazemos só o valor de cada venda pra memória antes de somar - o
+        // SQLite não soma "decimal" direto no SQL (mesma limitação que já
+        // resolvemos nos relatórios).
+        var valoresDasVendas = await _contexto.Vendas
+            .Where(v => v.UnidadeFranqueadaId == unidadeFranqueadaId
+                && v.DataVenda >= inicioDoMes
+                && v.DataVenda < inicioDoMesSeguinte)
+            .Select(v => v.ValorTotal)
+            .ToListAsync();
+
+        return valoresDasVendas.Sum();
     }
 
     public async Task<CobrancaResponseDto> MarcarComoPagaAsync(int id)

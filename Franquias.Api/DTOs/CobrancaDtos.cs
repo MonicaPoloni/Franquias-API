@@ -3,6 +3,10 @@ using Franquias.Api.Entities;
 
 namespace Franquias.Api.DTOs;
 
+// Repare que não tem campo de FaturamentoBase aqui: o valor não é digitado por
+// quem cria a cobrança, e sim somado automaticamente a partir das vendas da
+// unidade naquele mês (ver CobrancaService) - assim o royalty sempre bate com
+// o que realmente foi vendido, sem depender de alguém preencher certo.
 public class CobrancaCreateDto
 {
     [Required]
@@ -10,9 +14,6 @@ public class CobrancaCreateDto
 
     [Required]
     public DateOnly Competencia { get; set; }
-
-    [Range(0, double.MaxValue)]
-    public decimal FaturamentoBase { get; set; }
 
     [Range(0, 100)]
     public decimal PercentualRoyalty { get; set; }

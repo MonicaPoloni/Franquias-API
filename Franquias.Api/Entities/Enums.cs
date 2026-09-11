@@ -44,3 +44,11 @@ public enum PrioridadeChamadoSuporte
     Alta = 3,
     Urgente = 4
 }
+
+public enum CategoriaChamadoSuporte
+{
+    Financeiro = 1,
+    Operacional = 2,
+    TI = 3,
+    Outro = 4
+}

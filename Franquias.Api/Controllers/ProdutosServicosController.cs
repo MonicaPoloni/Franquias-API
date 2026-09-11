@@ -49,4 +49,9 @@ public class ProdutosServicosController : ControllerBase
         await _service.RemoverAsync(id);
         return NoContent();
     }
+
+    [Authorize(Roles = PerfilNomes.Administrador)]
+    [HttpPut("{id:int}/status")]
+    public async Task<ActionResult<ProdutoServicoResponseDto>> AtualizarStatus(int id, ProdutoServicoAtualizarStatusDto dto) =>
+        Ok(await _service.AtualizarStatusAsync(id, dto.Ativo));
 }

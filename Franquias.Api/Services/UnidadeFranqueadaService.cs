@@ -44,6 +44,8 @@ public class UnidadeFranqueadaService : IUnidadeFranqueadaService
             consulta = consulta.Where(u => u.Cidade.Contains(filtro.Cidade));
         if (!string.IsNullOrWhiteSpace(filtro.Cnpj))
             consulta = consulta.Where(u => u.Cnpj.Contains(filtro.Cnpj));
+        if (filtro.FranqueadoId.HasValue)
+            consulta = consulta.Where(u => u.FranqueadoId == filtro.FranqueadoId.Value);
         if (filtro.Ativo.HasValue)
             consulta = consulta.Where(u => u.Ativo == filtro.Ativo.Value);
 

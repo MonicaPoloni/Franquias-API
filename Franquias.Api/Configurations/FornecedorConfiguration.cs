@@ -14,6 +14,7 @@ public class FornecedorConfiguration : IEntityTypeConfiguration<Fornecedor>
         builder.Property(f => f.Cnpj).IsRequired().HasMaxLength(14);
         builder.Property(f => f.Telefone).HasMaxLength(20);
         builder.Property(f => f.Email).HasMaxLength(160);
+        builder.Property(f => f.Ativo).HasDefaultValue(true);
         builder.HasIndex(f => f.Cnpj).IsUnique();
     }
 }

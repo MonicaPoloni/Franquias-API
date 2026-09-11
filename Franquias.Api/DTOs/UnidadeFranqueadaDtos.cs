@@ -39,6 +39,9 @@ public class UnidadeFranqueadaFiltroDto : ParametrosPaginacao
     public string? Cidade { get; set; }
     public string? Cnpj { get; set; }
 
+    // Busca pelo responsável (franqueado) dono da unidade.
+    public int? FranqueadoId { get; set; }
+
     // Se não vier nada, a listagem mostra ativas E inativas juntas.
     public bool? Ativo { get; set; }
 

@@ -24,6 +24,12 @@ public class EstoqueUpdateDto
     public int QuantidadeMinima { get; set; }
 }
 
+// Filtro usado em GET /api/estoques.
+public class EstoqueFiltroDto : ParametrosPaginacao
+{
+    public int? UnidadeFranqueadaId { get; set; }
+}
+
 public class EstoqueResponseDto
 {
     public int Id { get; set; }

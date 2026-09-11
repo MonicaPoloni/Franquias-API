@@ -27,6 +27,9 @@ public class ProdutoServicoFiltroDto : ParametrosPaginacao
     public int? CategoriaId { get; set; }
     public string? Nome { get; set; }
 
+    // Se não vier nada, mostra ativos e inativos juntos.
+    public bool? Ativo { get; set; }
+
     // Aceita "nome" ou "preco". Qualquer outro valor (ou vazio) usa "nome".
     public string? OrdenarPor { get; set; }
 }
@@ -38,6 +41,13 @@ public class ProdutoServicoResponseDto
     public string? Descricao { get; set; }
     public decimal Preco { get; set; }
     public TipoProdutoServico Tipo { get; set; }
+    public bool Ativo { get; set; }
     public int CategoriaId { get; set; }
     public string CategoriaNome { get; set; } = string.Empty;
+}
+
+/// <summary>Corpo usado para ativar ou inativar um produto/serviço (PUT /api/produtosservicos/{id}/status).</summary>
+public class ProdutoServicoAtualizarStatusDto
+{
+    public bool Ativo { get; set; }
 }

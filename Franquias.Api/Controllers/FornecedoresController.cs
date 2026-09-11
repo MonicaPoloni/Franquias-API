@@ -18,9 +18,10 @@ public class FornecedoresController : ControllerBase
         _service = service;
     }
 
+    // Ex: /api/fornecedores?nome=Distribuidora&cnpj=11222333000144&ativo=true
     [HttpGet]
-    public async Task<ActionResult<ResultadoPaginado<FornecedorResponseDto>>> ObterTodos([FromQuery] ParametrosPaginacao paginacao) =>
-        Ok(await _service.ListarAsync(paginacao));
+    public async Task<ActionResult<ResultadoPaginado<FornecedorResponseDto>>> ObterTodos([FromQuery] FornecedorFiltroDto filtro) =>
+        Ok(await _service.ListarAsync(filtro));
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<FornecedorResponseDto>> ObterPorId(int id) =>
@@ -47,4 +48,9 @@ public class FornecedoresController : ControllerBase
         await _service.RemoverAsync(id);
         return NoContent();
     }
+
+    [Authorize(Roles = PerfilNomes.Administrador)]
+    [HttpPut("{id:int}/status")]
+    public async Task<ActionResult<FornecedorResponseDto>> AtualizarStatus(int id, FornecedorAtualizarStatusDto dto) =>
+        Ok(await _service.AtualizarStatusAsync(id, dto.Ativo));
 }

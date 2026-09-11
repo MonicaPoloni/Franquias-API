@@ -79,6 +79,53 @@ public class RelatorioService : IRelatorioService
             .ToList();
     }
 
+    public async Task<List<RoyaltiesPorUnidadeDto>> RoyaltiesPorUnidadeAsync(DateTime? dataInicio, DateTime? dataFim)
+    {
+        var consultaCobrancas = _contexto.Cobrancas.AsNoTracking().AsQueryable();
+        if (dataInicio.HasValue)
+            consultaCobrancas = consultaCobrancas.Where(c => c.DataVencimento >= dataInicio.Value);
+        if (dataFim.HasValue)
+            consultaCobrancas = consultaCobrancas.Where(c => c.DataVencimento <= dataFim.Value);
+
+        // De novo trazemos pra memória antes de somar (decimal + SQLite).
+        var cobrancas = await consultaCobrancas
+            .Select(c => new { c.UnidadeFranqueadaId, c.ValorCobranca, c.Status })
+            .ToListAsync();
+
+        var unidades = await _contexto.UnidadesFranqueadas
+            .AsNoTracking()
+            .Select(u => new { u.Id, u.Nome })
+            .ToListAsync();
+
+        var cobrancasPorUnidade = cobrancas
+            .GroupBy(c => c.UnidadeFranqueadaId)
+            .ToDictionary(g => g.Key, g => new
+            {
+                Total = g.Sum(c => c.ValorCobranca),
+                Pago = g.Where(c => c.Status == StatusCobranca.Paga).Sum(c => c.ValorCobranca),
+                Quantidade = g.Count()
+            });
+
+        return unidades
+            .Select(u =>
+            {
+                cobrancasPorUnidade.TryGetValue(u.Id, out var dados);
+                var total = dados?.Total ?? 0;
+                var pago = dados?.Pago ?? 0;
+                return new RoyaltiesPorUnidadeDto
+                {
+                    UnidadeFranqueadaId = u.Id,
+                    UnidadeFranqueadaNome = u.Nome,
+                    TotalCobrado = total,
+                    TotalPago = pago,
+                    TotalPendente = total - pago,
+                    QuantidadeCobrancas = dados?.Quantidade ?? 0
+                };
+            })
+            .OrderByDescending(r => r.TotalCobrado)
+            .ToList();
+    }
+
     public async Task<TotalRoyaltiesDto> TotalRoyaltiesAsync(DateTime? dataInicio, DateTime? dataFim)
     {
         var consulta = _contexto.Cobrancas.AsNoTracking().AsQueryable();

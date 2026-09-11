@@ -25,22 +25,26 @@ public class EstoqueService : IEstoqueService
         _contexto = contexto;
     }
 
-    public async Task<ResultadoPaginado<EstoqueResponseDto>> ListarAsync(ParametrosPaginacao? paginacao)
+    public async Task<ResultadoPaginado<EstoqueResponseDto>> ListarAsync(EstoqueFiltroDto? filtro)
     {
-        paginacao ??= new ParametrosPaginacao();
+        filtro ??= new EstoqueFiltroDto();
 
-        var consulta = ConsultaComIncludes().OrderBy(e => e.Id);
+        var consulta = ConsultaComIncludes();
+        if (filtro.UnidadeFranqueadaId.HasValue)
+            consulta = consulta.Where(e => e.UnidadeFranqueadaId == filtro.UnidadeFranqueadaId.Value);
+
+        consulta = consulta.OrderBy(e => e.Id);
         var totalRegistros = await consulta.CountAsync();
         var estoques = await consulta
-            .Skip((paginacao.Pagina - 1) * paginacao.TamanhoPagina)
-            .Take(paginacao.TamanhoPagina)
+            .Skip((filtro.Pagina - 1) * filtro.TamanhoPagina)
+            .Take(filtro.TamanhoPagina)
             .ToListAsync();
 
         return new ResultadoPaginado<EstoqueResponseDto>
         {
             Itens = estoques.Select(MapearParaDto).ToList(),
-            PaginaAtual = paginacao.Pagina,
-            TamanhoPagina = paginacao.TamanhoPagina,
+            PaginaAtual = filtro.Pagina,
+            TamanhoPagina = filtro.TamanhoPagina,
             TotalRegistros = totalRegistros
         };
     }

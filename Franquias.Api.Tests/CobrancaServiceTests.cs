@@ -13,11 +13,21 @@ public class CobrancaServiceTests
         contexto);
 
     [Fact]
-    public async Task CriarAsync_DeveCalcularValorCobrancaAPartirDoPercentual()
+    public async Task CriarAsync_DeveSomarAsVendasDoMesEDepoisAplicarOPercentual()
     {
-        // Arrange: faturamento de 10.000 com 5% de royalty
+        // Arrange: duas vendas em setembro/2026 somando 10.000, e uma venda em
+        // agosto (fora do período) que NÃO deve entrar na conta.
         var contexto = ContextoDeTeste.Criar();
         var unidade = await SementeDeDados.CriarUnidadeFranqueadaAsync(contexto);
+        var usuario = await SementeDeDados.CriarUsuarioAsync(contexto);
+
+        contexto.Vendas.AddRange(
+            new Venda { UnidadeFranqueadaId = unidade.Id, UsuarioId = usuario.Id, DataVenda = new DateTime(2026, 9, 5), ValorTotal = 6000, FormaPagamento = FormaPagamento.Pix },
+            new Venda { UnidadeFranqueadaId = unidade.Id, UsuarioId = usuario.Id, DataVenda = new DateTime(2026, 9, 20), ValorTotal = 4000, FormaPagamento = FormaPagamento.Pix },
+            new Venda { UnidadeFranqueadaId = unidade.Id, UsuarioId = usuario.Id, DataVenda = new DateTime(2026, 8, 31), ValorTotal = 999, FormaPagamento = FormaPagamento.Pix }
+        );
+        await contexto.SaveChangesAsync();
+
         var servico = CriarServico(contexto);
 
         // Act
@@ -25,12 +35,13 @@ public class CobrancaServiceTests
         {
             UnidadeFranqueadaId = unidade.Id,
             Competencia = new DateOnly(2026, 9, 1),
-            FaturamentoBase = 10000,
             PercentualRoyalty = 5,
             DataVencimento = new DateTime(2026, 10, 5)
         });
 
-        // Assert: 10.000 x 5% = 500
+        // Assert: faturamento = 6000 + 4000 = 10.000 (a venda de agosto fica de fora);
+        // valor da cobrança = 10.000 x 5% = 500
+        Assert.Equal(10000, cobranca.FaturamentoBase);
         Assert.Equal(500, cobranca.ValorCobranca);
         Assert.Equal(StatusCobranca.Pendente, cobranca.Status);
     }
@@ -46,7 +57,6 @@ public class CobrancaServiceTests
         {
             UnidadeFranqueadaId = unidade.Id,
             Competencia = new DateOnly(2026, 9, 1),
-            FaturamentoBase = 10000,
             PercentualRoyalty = 5,
             DataVencimento = new DateTime(2026, 10, 5)
         });

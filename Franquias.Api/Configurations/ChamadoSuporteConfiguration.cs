@@ -14,6 +14,7 @@ public class ChamadoSuporteConfiguration : IEntityTypeConfiguration<ChamadoSupor
         builder.Property(c => c.Descricao).IsRequired().HasMaxLength(2000);
         builder.Property(c => c.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(c => c.Prioridade).HasConversion<string>().HasMaxLength(20);
+        builder.Property(c => c.Categoria).HasConversion<string>().HasMaxLength(20).HasDefaultValue(CategoriaChamadoSuporte.Outro);
 
         builder.HasOne(c => c.UnidadeFranqueada)
             .WithMany(u => u.ChamadosSuporte)

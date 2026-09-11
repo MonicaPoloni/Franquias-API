@@ -6,6 +6,7 @@ public interface IRelatorioService
 {
     Task<List<FaturamentoPorUnidadeDto>> FaturamentoPorUnidadeAsync(DateTime? dataInicio, DateTime? dataFim);
     Task<List<RankingUnidadeDto>> RankingUnidadesAsync(DateTime? dataInicio, DateTime? dataFim);
+    Task<List<RoyaltiesPorUnidadeDto>> RoyaltiesPorUnidadeAsync(DateTime? dataInicio, DateTime? dataFim);
     Task<TotalRoyaltiesDto> TotalRoyaltiesAsync(DateTime? dataInicio, DateTime? dataFim);
     Task<List<ProdutoMaisVendidoDto>> ProdutosMaisVendidosAsync(DateTime? dataInicio, DateTime? dataFim, int top);
     Task<List<EstoqueCriticoDto>> EstoqueCriticoAsync();

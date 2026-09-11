@@ -9,4 +9,5 @@ public interface IProdutoServicoService
     Task<ProdutoServicoResponseDto> CriarAsync(ProdutoServicoCreateDto dto);
     Task<ProdutoServicoResponseDto> AtualizarAsync(int id, ProdutoServicoCreateDto dto);
     Task RemoverAsync(int id);
+    Task<ProdutoServicoResponseDto> AtualizarStatusAsync(int id, bool ativo);
 }

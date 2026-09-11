@@ -18,9 +18,10 @@ public class EstoquesController : ControllerBase
         _service = service;
     }
 
+    // Ex: /api/estoques?unidadeFranqueadaId=1
     [HttpGet]
-    public async Task<ActionResult<ResultadoPaginado<EstoqueResponseDto>>> ObterTodos([FromQuery] ParametrosPaginacao paginacao) =>
-        Ok(await _service.ListarAsync(paginacao));
+    public async Task<ActionResult<ResultadoPaginado<EstoqueResponseDto>>> ObterTodos([FromQuery] EstoqueFiltroDto filtro) =>
+        Ok(await _service.ListarAsync(filtro));
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<EstoqueResponseDto>> ObterPorId(int id) =>

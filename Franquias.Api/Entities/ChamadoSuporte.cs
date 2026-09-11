@@ -12,6 +12,7 @@ public class ChamadoSuporte
 
     public string Titulo { get; set; } = string.Empty;
     public string Descricao { get; set; } = string.Empty;
+    public CategoriaChamadoSuporte Categoria { get; set; } = CategoriaChamadoSuporte.Outro;
     public StatusChamadoSuporte Status { get; set; } = StatusChamadoSuporte.Aberto;
     public PrioridadeChamadoSuporte Prioridade { get; set; } = PrioridadeChamadoSuporte.Media;
     public DateTime DataAbertura { get; set; } = DateTime.UtcNow;

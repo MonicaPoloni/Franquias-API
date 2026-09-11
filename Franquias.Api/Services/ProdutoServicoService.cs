@@ -35,6 +35,8 @@ public class ProdutoServicoService : IProdutoServicoService
             consulta = consulta.Where(p => p.CategoriaId == filtro.CategoriaId.Value);
         if (!string.IsNullOrWhiteSpace(filtro.Nome))
             consulta = consulta.Where(p => p.Nome.Contains(filtro.Nome));
+        if (filtro.Ativo.HasValue)
+            consulta = consulta.Where(p => p.Ativo == filtro.Ativo.Value);
 
         // O SQLite não sabe ordenar direto por uma coluna "decimal" (mesma
         // limitação do Sum() que já vimos nos relatórios). O truque aqui é
@@ -118,6 +120,18 @@ public class ProdutoServicoService : IProdutoServicoService
         await _repository.SalvarAsync();
     }
 
+    public async Task<ProdutoServicoResponseDto> AtualizarStatusAsync(int id, bool ativo)
+    {
+        var produto = await _repository.ObterPorIdAsync(id)
+            ?? throw new KeyNotFoundException($"Produto/Serviço {id} não encontrado.");
+
+        produto.Ativo = ativo;
+        _repository.Atualizar(produto);
+        await _repository.SalvarAsync();
+
+        return await ObterPorIdAsync(id);
+    }
+
     private async Task<Categoria> ObterCategoriaOuFalharAsync(int id) =>
         await _categoriaRepository.ObterPorIdAsync(id)
             ?? throw new ArgumentException($"Categoria {id} não existe.");
@@ -129,6 +143,7 @@ public class ProdutoServicoService : IProdutoServicoService
         Descricao = produto.Descricao,
         Preco = produto.Preco,
         Tipo = produto.Tipo,
+        Ativo = produto.Ativo,
         CategoriaId = produto.CategoriaId,
         CategoriaNome = produto.Categoria.Nome
     };
