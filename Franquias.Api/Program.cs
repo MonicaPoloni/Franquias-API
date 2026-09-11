@@ -107,6 +107,17 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+// Aplica qualquer migration pendente e popula o banco com dados de exemplo
+// (só na primeira vez, se estiver vazio) assim que a API sobe - dessa forma
+// quem clonar o projeto não precisa rodar nenhum comando manual do EF Core,
+// é só "dotnet run".
+using (var escopo = app.Services.CreateScope())
+{
+    var contexto = escopo.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await contexto.Database.MigrateAsync();
+    await DbSeeder.SeedAsync(contexto);
+}
+
 // Middleware global de tratamento de exceções
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
