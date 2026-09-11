@@ -1,6 +1,116 @@
 @Franquias.Api_HostAddress = http://localhost:5126
 
-GET {{Franquias.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Login (usuário de exemplo criado pelo seed automático)
+# @name login
+POST {{Franquias.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
 
-###
+{
+  "email": "ana@teste.com",
+  "senha": "123456"
+}
+
+### A partir daqui, as requisições usam o token da resposta do login acima
+@token = {{login.response.body.token}}
+
+### Listar usuários (só Administrador)
+GET {{Franquias.Api_HostAddress}}/api/usuarios
+Authorization: Bearer {{token}}
+
+### Cadastrar uma categoria
+# @name criarCategoria
+POST {{Franquias.Api_HostAddress}}/api/categorias
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Sobremesas",
+  "descricao": "Doces e sobremesas em geral"
+}
+
+### Cadastrar uma unidade franqueada
+POST {{Franquias.Api_HostAddress}}/api/unidadesfranqueadas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Unidade Teste .http",
+  "cnpj": "11222333000900",
+  "endereco": "Rua Exemplo, 123",
+  "cidade": "Curitiba",
+  "estado": "PR",
+  "franqueadoraId": 1,
+  "franqueadoId": 1
+}
+
+### Listar unidades franqueadas (com filtro por cidade)
+GET {{Franquias.Api_HostAddress}}/api/unidadesfranqueadas?cidade=Sao Paulo
+Authorization: Bearer {{token}}
+
+### Cadastrar um produto/serviço
+POST {{Franquias.Api_HostAddress}}/api/produtosservicos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Pudim",
+  "descricao": "Pudim de leite condensado",
+  "preco": 12.5,
+  "tipo": "Produto",
+  "categoriaId": 1
+}
+
+### Consultar estoque de uma unidade
+GET {{Franquias.Api_HostAddress}}/api/estoques?unidadeFranqueadaId=1
+Authorization: Bearer {{token}}
+
+### Registrar entrada de estoque
+POST {{Franquias.Api_HostAddress}}/api/movimentacoesestoque
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "estoqueId": 1,
+  "tipo": "Entrada",
+  "quantidade": 20,
+  "observacao": "Reposição de estoque via .http"
+}
+
+### Registrar uma venda (com baixa automática de estoque)
+POST {{Franquias.Api_HostAddress}}/api/vendas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "unidadeFranqueadaId": 1,
+  "usuarioId": 1,
+  "formaPagamento": "Pix",
+  "itens": [
+    { "produtoServicoId": 1, "quantidade": 2 }
+  ]
+}
+
+### Relatório: faturamento por unidade
+GET {{Franquias.Api_HostAddress}}/api/relatorios/faturamento-por-unidade
+Authorization: Bearer {{token}}
+
+### Relatório: royalties por unidade
+GET {{Franquias.Api_HostAddress}}/api/relatorios/royalties-por-unidade
+Authorization: Bearer {{token}}
+
+### Relatório: estoque crítico
+GET {{Franquias.Api_HostAddress}}/api/relatorios/estoque-critico
+Authorization: Bearer {{token}}
+
+### Exemplo de erro de validação (e-mail inválido no cadastro público)
+POST {{Franquias.Api_HostAddress}}/api/auth/registrar
+Content-Type: application/json
+
+{
+  "nome": "Teste",
+  "email": "email-invalido",
+  "senha": "123456"
+}
+
+### Exemplo de acesso sem token (deve retornar 401)
+GET {{Franquias.Api_HostAddress}}/api/cobrancas
